@@ -12,6 +12,13 @@ namespace HypeGrid.API.Controllers.Admin;
 /// configured object store (Cloudflare R2) and returns the public URL the form
 /// saves into the relevant *_image_url field. Image binaries never touch SQL.
 /// </summary>
+/// <summary>Multipart form for <see cref="AssetsController.Upload"/> (file + category).</summary>
+public sealed class AssetUploadForm
+{
+    public IFormFile? File { get; set; }
+    public string? Category { get; set; }
+}
+
 [Authorize(Policy = HypeGridPolicies.RequireAdminAccess)]
 [Route("api/admin/assets")]
 public sealed class AssetsController : BaseController
@@ -21,9 +28,15 @@ public sealed class AssetsController : BaseController
     public AssetsController(IAssetStorageService storage) => _storage = storage;
 
     [HttpPost("upload")]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(10 * 1024 * 1024)] // hard cap above the largest per-category limit (8 MB hero)
-    public async Task<IActionResult> Upload([FromForm] IFormFile? file, [FromForm] string? category, CancellationToken ct)
+    public async Task<IActionResult> Upload([FromForm] AssetUploadForm form, CancellationToken ct)
     {
+        // Bound as a single [FromForm] model — Swashbuckle can't mix a [FromForm]
+        // IFormFile with separate [FromForm] scalars, which breaks swagger.json.
+        var file = form.File;
+        var category = form.Category;
+
         var cat = AssetCategory.FromKey(category);
         if (cat is null)
             return Bad($"Unknown category. Allowed: {string.Join(", ", AssetCategory.All.Select(c => c.Key))}.");
