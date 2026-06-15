@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+
+# Secrets — never commit
+appsettings.Development.json
+appsettings.*.Local.json
+*.secrets.json
+
+# Rider / VS
+.vs/
+.idea/
+
+# Logs
+*.log
